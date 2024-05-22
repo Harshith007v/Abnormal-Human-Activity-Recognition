@@ -140,16 +140,13 @@ test_set = test_datagen.flow_from_directory(
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 
-
-
-# Train the model with class weights
+#Train the model
 model.fit(
     training_set,
     epochs=20,
     steps_per_epoch=len(training_set),
     validation_data=test_set,
     validation_steps=len(test_set),
-#     class_weight=class_weight_dict  # Pass the calculated class weights
 )
 
 # Evaluate the model on the test set
