@@ -1,6 +1,6 @@
-########  LUCAS KANADE #######################
 import cv2
 import numpy as np
+import os
 
 # Function to calculate optical flow
 def calculate_optical_flow(prev_frame, current_frame):
@@ -16,13 +16,21 @@ def calculate_optical_flow(prev_frame, current_frame):
 
     return magnitude
 
-# Function to detect and draw bounding boxes around aggressive motion in a video
-def detect_aggressive_motion(video_path):
+# Function to detect and save Canny edge images of frames with aggressive motion in a video
+def detect_and_save_aggressive_canny_frames(video_path, output_folder):
+    # Create the output folder if it doesn't exist
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # Extract video name without extension
+    video_name = os.path.splitext(os.path.basename(video_path))[0]
+
     # Open video capture
     cap = cv2.VideoCapture(video_path)
 
     # Read the first frame
     ret, prev_frame = cap.read()
+    frame_count = 0
 
     while True:
         # Read the current frame
@@ -36,26 +44,47 @@ def detect_aggressive_motion(video_path):
         # Threshold for detecting aggressive motion
         threshold = 7
 
+        # Apply Gaussian blur to reduce noise and improve sensitivity
+        magnitude_blurred = cv2.GaussianBlur(magnitude, (5, 5), 0)
+
         # Count the number of pixels with magnitude above the threshold
-        aggressive_pixels = np.sum(magnitude > threshold)
+        aggressive_pixels = np.sum(magnitude_blurred > threshold)
 
         # If a significant number of pixels have high magnitude, consider it aggressive motion
-        if aggressive_pixels > 0.02 * magnitude.size:
-            print("Aggressive motion detected!")
+        if aggressive_pixels > 0.01 * magnitude.size:
+            print(f"Aggressive motion detected in frame {frame_count}!")
 
-        # Display the frame with motion information
-        cv2.imshow('Video with Motion', current_frame)
+            # Apply Canny edge detection to the frame
+            edges = cv2.Canny(current_frame, 50, 150)
 
-        # Update the previous frame
+            # Save the Canny edge image
+            output_filename = f"{video_name}_{frame_count:03d}_canny.png"
+            output_path = os.path.join(output_folder, output_filename)
+            cv2.imwrite(output_path, edges)
+
+        # Update the previous frame and frame count
         prev_frame = current_frame
+        frame_count += 1
 
-        # Break the loop if 'q' is pressed
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-            break
-
-    # Release video capture and close windows
+    # Release video capture
     cap.release()
-    cv2.destroyAllWindows()
 
-# Replace 'path/to/your/video.mp4' with the path to your video file
-detect_aggressive_motion('/Users/harshi/Downloads/Abuse001_x264.mp4')
+# Function to process all videos in a given folder
+def process_videos_in_folder(folder_path, output_root_folder):
+    # Iterate through all folders in the specified directory
+    for root, dirs, files in os.walk(folder_path):
+        for folder in dirs:
+            folder_path = os.path.join(root, folder)
+
+            # Create the corresponding output folder in the root output folder
+            output_folder = os.path.join(output_root_folder, folder)
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
+
+            # Iterate through all video files in the current folder
+            for file in os.listdir(folder_path):
+                if file.endswith(".mp4"):
+                    video_path = os.path.join(folder_path, file)
+                    detect_and_save_aggressive_canny_frames(video_path, output_folder)
+
+process_videos_in_folder('/Users/harshi/Desktop/Testing', '/Users/harshi/Desktop/Output_testing')
