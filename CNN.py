@@ -87,7 +87,6 @@ layer10 = MaxPooling2D(pool_size=(2, 2), strides=(2, 2), name='mp3')(layer10)
 
 # Output block
 layer11 = Conv2D(num_classes, (1, 1), kernel_regularizer=keras.regularizers.l2(1e-4), name='sep_conv22')(layer10)
-# layer11 = GlobalAveragePooling2D(name='gap1')(layer11)
 layer11 = Flatten(name='flatten1')(layer11)
 output = Activation('softmax', name='softmax1')(layer11)
 
