@@ -155,14 +155,35 @@ eval_result = model.evaluate(test_set, steps=len(test_set))
 predictions = model.predict(test_set, steps=len(test_set))
 true_labels = test_set.classes
 
-# Convert predictions to class labels
-predicted_labels = np.argmax(predictions, axis=1)
 
-# Print classification report
-print("Classification Report:")
-print(classification_report(true_labels, predicted_labels, target_names=class_labels))
-
-# Print confusion matrix
+# Compute confusion matrix
 conf_matrix = confusion_matrix(true_labels, predicted_labels)
-print("Confusion Matrix:")
-print(conf_matrix)
+
+# Plot the confusion matrix
+conf_matrix_percentage = conf_matrix / conf_matrix.sum(axis=1)[:, np.newaxis] * 100
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix_percentage, annot=True, fmt=".2f", cmap="Blues", xticklabels=class_labels, yticklabels=class_labels)
+plt.title("Confusion Matrix (Percentage)")
+plt.xlabel("Predicted Labels")
+plt.ylabel("True Labels")
+plt.show()
+
+# Binarize the true labels
+true_labels_binarized = label_binarize(true_labels, classes=range(num_classes))
+
+# Plot the ROC curve for each class and calculate the AUC score
+plt.figure(figsize=(10, 8))
+colors = ['blue', 'orange', 'green', 'red']
+
+for i in range(num_classes):
+    fpr, tpr, _ = roc_curve(true_labels_binarized[:, i], predictions[:, i])
+    roc_auc = auc(fpr, tpr)
+    
+    plt.plot(fpr, tpr, color=colors[i], lw=2, label=f"{class_labels[i]} (AUC = {roc_auc:.2f})")
+
+plt.plot([0, 1], [0, 1], 'k--', lw=2)
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc='lower right')
+plt.show()
